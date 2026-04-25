@@ -1,0 +1,21 @@
+{
+  "_comment": "Map friendly names to actual commands. Edit freely. No restart needed.",
+
+  "browser":       "xdg-open",
+  "firefox":       "firefox",
+  "chrome":        "google-chrome",
+  "chromium":      "chromium-browser",
+  "terminal":      "gnome-terminal",
+  "files":         "nautilus",
+  "file manager":  "nautilus",
+  "editor":        "gedit",
+  "code":          "code",
+  "vscode":        "code",
+  "calculator":    "gnome-calculator",
+  "settings":      "gnome-control-center",
+  "monitor":       "gnome-system-monitor",
+  "discord":       "discord",
+  "spotify":       "spotify",
+  "vlc":           "vlc",
+  "gimp":          "gimp"
+}

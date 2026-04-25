@@ -1,0 +1,7 @@
+# morning.monrela — example startup routine
+# Lines starting with # are comments
+# Run with: RUN_SCRIPT morning
+
+OPEN browser
+BROWSE mail.google.com
+NOTE "Morning session started"
