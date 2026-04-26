@@ -1,0 +1,22 @@
+# monrela_test.monrela
+# Sanity test for the Monrela scripting engine
+# Tests all scripting features — safe to run anytime
+# Run with: RUN_SCRIPT monrela_test
+
+NOTIFY "Test started" "Running Monrela engine tests"
+
+SET greeting = Monrela scripting works
+NOTE "$greeting"
+
+WAIT 1
+NOTE "WAIT passed"
+
+IF internet_up THEN NOTE "IF boolean works" ELSE NOTE "IF boolean ELSE works"
+IF disk_usage > 0 THEN NOTE "IF numeric works"
+
+REPEAT 2 NOTE "REPEAT test"
+
+TRY OPEN this_app_xyz_does_not_exist FALLBACK NOTE "TRY FALLBACK works"
+
+NOTIFY "Tests complete" "Monrela scripting engine is healthy"
+NOTE "All tests passed"

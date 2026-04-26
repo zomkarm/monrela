@@ -1,0 +1,14 @@
+# resources.monrela
+# Full snapshot of system resources — CPU, memory, disk, processes
+# Run with: RUN_SCRIPT resources
+
+RUN "echo === CPU ==="
+RUN "top -bn1 | grep 'Cpu(s)'"
+RUN "echo === Memory ==="
+RUN "free -h"
+RUN "echo === Disk ==="
+RUN "df -h /"
+RUN "echo === Top Processes by Memory ==="
+RUN "ps aux --sort=-%mem | head -8"
+
+NOTE "Resource snapshot taken"

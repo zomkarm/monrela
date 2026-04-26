@@ -1,0 +1,19 @@
+# syscheck.monrela
+# Full system health check
+# Run with: RUN_SCRIPT syscheck
+
+SET disk_warn = 80
+SET mem_warn = 85
+SET cpu_warn = 90
+
+RUN "uptime"
+RUN "free -h"
+RUN "df -h /"
+
+IF disk_usage > $disk_warn THEN NOTIFY "Disk Warning" "Usage above $disk_warn percent" ELSE NOTIFY "Disk OK" "Usage is within safe range"
+IF memory_usage > $mem_warn THEN NOTIFY "Memory Warning" "Usage above $mem_warn percent" ELSE NOTIFY "Memory OK" "Usage is within safe range"
+IF cpu_usage > $cpu_warn THEN NOTIFY "CPU Warning" "Usage above $cpu_warn percent" ELSE NOTIFY "CPU OK" "Usage is normal"
+IF internet_up THEN NOTIFY "Network OK" "Internet is reachable" ELSE NOTIFY "Network Down" "Cannot reach internet"
+
+NOTE "System check completed"
+NOTIFY "Syscheck done" "All checks complete"

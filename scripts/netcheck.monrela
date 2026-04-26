@@ -1,0 +1,11 @@
+# netcheck.monrela
+# Network diagnostics — connectivity and interface info
+# Run with: RUN_SCRIPT netcheck
+
+RUN "ip addr show | grep inet"
+RUN "ping -c 2 -W 2 8.8.8.8"
+RUN "ping -c 2 -W 2 google.com"
+
+IF internet_up THEN NOTIFY "Network OK" "Internet is reachable" ELSE NOTIFY "Network Issue" "Cannot reach internet"
+
+NOTE "Network check completed"

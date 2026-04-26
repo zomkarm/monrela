@@ -78,7 +78,7 @@ echo "  [✓] Dependencies installed"
 echo ""
 echo "  Copying files to $INSTALL_DIR ..."
 mkdir -p "$INSTALL_DIR"
-cp -r main.py daemon.py palette.py actions.py config.py conditions.py scripting.py \
+cp -r main.py daemon.py palette.py actions.py config.py conditions.py scripting.py script_manager.py \
       config scripts assets requirements.txt "$INSTALL_DIR/"
 echo "  [✓] Files copied"
 

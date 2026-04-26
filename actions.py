@@ -308,6 +308,28 @@ class RunScriptAction:
             return []
 
 
+class ManageScriptsAction:
+    """MANAGE_SCRIPTS — open the script manager window."""
+
+    def run(self, args: list, aliases: dict) -> Result:
+        try:
+            # Import here to avoid loading Qt in daemon context
+            from PyQt6.QtWidgets import QApplication
+            import script_manager
+
+            app = QApplication.instance()
+            if app is None:
+                return Result(False, "Palette must be open to use MANAGE_SCRIPTS")
+
+            win = script_manager.ScriptManagerWindow()
+            win.show()
+            win.raise_()
+            win.activateWindow()
+            return Result(True, "Script manager opened")
+        except Exception as e:
+            return Result(False, "Could not open script manager", str(e))            
+
+
 # ── Registry ──────────────────────────────────
 
 REGISTRY = {
@@ -320,6 +342,7 @@ REGISTRY = {
     "NOTE":       NoteAction,
     "RUN":        RunAction,
     "RUN_SCRIPT": RunScriptAction,
+    "MANAGE_SCRIPTS": ManageScriptsAction,
 }
 
 VERB_LIST = list(REGISTRY.keys())

@@ -19,6 +19,10 @@ from PyQt6.QtGui import QIcon, QFont
 
 from config import SOCKET_PATH, BUFFER_SIZE, ENCODING
 
+from PyQt6.QtWidgets import QCompleter
+from PyQt6.QtCore import Qt, QTimer, QStringListModel, pyqtSignal
+import os
+
 # ── Palette ───────────────────────────────────────────────────────────────────
 # Colour palette
 C_BG      = "#0e1117"
@@ -116,9 +120,10 @@ VERB_HINTS = {
     "NOTE":       ('NOTE "text"',                 "#fb923c"),
     "RUN":        ("RUN <shell command>",         C_MUTED),
     "RUN_SCRIPT": ("RUN_SCRIPT <script name>",    C_ACCENT),
+    "MANAGE_SCRIPTS": ("MANAGE_SCRIPTS",    C_ACCENT),
 }
 
-DEFAULT_HINT = "OPEN  CLOSE  BROWSE  SEARCH  GOTO  FIND  NOTE  RUN  RUN_SCRIPT"
+DEFAULT_HINT = "OPEN  CLOSE  BROWSE  SEARCH  GOTO  FIND  NOTE  RUN  RUN_SCRIPT MANAGE_SCRIPTS"
 
 
 class MonrelaPalette(QWidget):
@@ -203,6 +208,95 @@ class MonrelaPalette(QWidget):
         self._timer = QTimer()
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self._reset_and_hide)
+
+        # Setup autocomplete
+        self._setup_autocomplete()
+
+
+    def _setup_autocomplete(self):
+        """
+        Two-stage completer:
+        Stage 1: verb completion — type 'R' shows RUN, RUN_SCRIPT, REPEAT
+        Stage 2: script completion — after 'RUN_SCRIPT ' shows script names
+        """
+        self._all_verbs = [
+            "OPEN", "CLOSE", "BROWSE", "SEARCH",
+            "GOTO", "FIND", "NOTE", "RUN", "RUN_SCRIPT", "MANAGE_SCRIPTS",
+        ]
+
+        self._completer = QCompleter(self._all_verbs, self)
+        self._completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        self._completer.setCompletionMode(
+            QCompleter.CompletionMode.PopupCompletion
+        )
+        self._completer.setFilterMode(Qt.MatchFlag.MatchContains)
+
+        # Style the dropdown popup
+        self._completer.popup().setStyleSheet(f"""
+            QListView {{
+                background-color: #161b24;
+                color: #e8eaf0;
+                border: 1px solid #252d3d;
+                border-radius: 0px;
+                font-family: "JetBrains Mono","Ubuntu Mono","Consolas",monospace;
+                font-size: 13px;
+                padding: 4px;
+                outline: none;
+            }}
+            QListView::item {{
+                padding: 6px 12px;
+                border-radius: 3px;
+            }}
+            QListView::item:selected {{
+                background-color: #00d4aa;
+                color: #0e1117;
+            }}
+            QListView::item:hover {{
+                background-color: #252d3d;
+            }}
+        """)
+
+        self._input.setCompleter(self._completer)
+
+        # Watch text changes for stage 2 (script name completion)
+        self._input.textChanged.connect(self._update_completions)
+
+
+    def _get_script_names(self) -> list[str]:
+        """Read available script names from scripts directory."""
+        from config import SCRIPTS_DIR
+        try:
+            files = os.listdir(SCRIPTS_DIR)
+            return [
+                f.replace(".relay", "")
+                for f in files
+                if f.endswith(".relay") and not f.startswith("_")
+            ]
+        except OSError:
+            return []
+
+
+    def _update_completions(self, text: str):
+        """
+        Switch completer model based on what user has typed.
+        If text starts with 'RUN_SCRIPT ' → complete with script names.
+        Otherwise → complete with verb list.
+        """
+        upper = text.upper()
+
+        if upper.startswith("RUN_SCRIPT "):
+            # Stage 2 — script name completion
+            scripts = self._get_script_names()
+            # Build full suggestions: "RUN_SCRIPT morning" etc
+            prefix    = text[:11]  # preserve original casing of "RUN_SCRIPT "
+            suggestions = [f"{prefix}{s}" for s in scripts]
+            model = QStringListModel(suggestions, self._completer)
+            self._completer.setModel(model)
+
+        else:
+            # Stage 1 — verb completion
+            model = QStringListModel(self._all_verbs, self._completer)
+            self._completer.setModel(model)
 
     # ── Hint ──────────────────────────────────
 

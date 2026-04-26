@@ -1,0 +1,10 @@
+# ports.monrela
+# Show what is listening on common development ports
+# Run with: RUN_SCRIPT ports
+
+RUN "echo === Active Development Ports ==="
+RUN "ss -tlnp | grep -E ':(3000|4000|5000|8000|8080|8888|9000|5432|3306|6379|27017)'"
+RUN "echo === All Listening Ports ==="
+RUN "ss -tlnp"
+
+NOTE "Port check completed"
