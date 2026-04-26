@@ -1,0 +1,5 @@
+# This app probably doesn't exist — should trigger FALLBACK
+TRY OPEN nonexistent_app_xyz FALLBACK NOTE "App not found, fallback worked"
+
+# This should succeed
+TRY NOTE "Try succeeded" FALLBACK NOTE "This should not appear"

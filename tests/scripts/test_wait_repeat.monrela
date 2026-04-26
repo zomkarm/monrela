@@ -1,0 +1,7 @@
+# Test WAIT
+NOTE "Starting wait test"
+WAIT 2
+NOTE "2 seconds passed"
+
+# Test REPEAT
+REPEAT 3 NOTE "Repeated note"

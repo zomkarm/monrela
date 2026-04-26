@@ -1,0 +1,4 @@
+# Test NOTIFY verb directly
+NOTIFY "Test notification from Monrela"
+WAIT 1
+NOTIFY "Scripting engine is working"

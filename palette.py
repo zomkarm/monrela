@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout,
     QLineEdit, QLabel, QFrame, QApplication,
 )
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont
 
 from config import SOCKET_PATH, BUFFER_SIZE, ENCODING
@@ -122,6 +122,9 @@ DEFAULT_HINT = "OPEN  CLOSE  BROWSE  SEARCH  GOTO  FIND  NOTE  RUN  RUN_SCRIPT"
 
 
 class MonrelaPalette(QWidget):
+
+    # Emitted when palette is fully closed — main.py connects this to cleanup
+    closed = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -245,7 +248,7 @@ class MonrelaPalette(QWidget):
             return {"ok": False, "message": "Daemon not running", "detail": "Run: monrela --daemon"}
         except ConnectionRefusedError:
             return {"ok": False, "message": "Cannot connect to daemon", "detail": "Run: monrela --daemon"}
-        except socket.timeout:
+        except _socket.timeout:
             return {"ok": False, "message": "Daemon did not respond", "detail": ""}
         except Exception as e:
             return {"ok": False, "message": "Connection error", "detail": str(e)}
@@ -282,6 +285,7 @@ class MonrelaPalette(QWidget):
         self._hint.setStyleSheet("")
         self.adjustSize()
         self.hide()
+        self.closed.emit()   # tell main.py we're done — triggers lock file cleanup
 
     # ── Public: open palette ──────────────────
 

@@ -1,0 +1,11 @@
+# Morning routine with conditions
+SET workspace = ~/Downloads
+
+IF internet_up THEN BROWSE mail.google.com ELSE NOTE "No internet — skipping mail"
+IF dir_exists $workspace THEN GOTO $workspace ELSE NOTE "Workspace not found: $workspace"
+
+IF memory_usage > 80 THEN NOTIFY "Memory high — consider closing apps" ELSE NOTE "Memory is fine"
+IF disk_usage > 85 THEN NOTIFY "Disk getting full" "Consider cleaning up" ELSE NOTE "Disk space ok"
+
+NOTE "Morning routine complete"
+NOTIFY "Morning routine done"

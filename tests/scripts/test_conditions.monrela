@@ -1,0 +1,11 @@
+# Test basic conditions
+IF internet_up THEN NOTE "Internet is available"
+IF internet_down THEN NOTE "No internet connection"
+
+# Test disk with threshold variable
+SET limit = 1
+IF disk_usage > $limit THEN NOTE "Disk is being used (expected)"
+
+# Test ELSE branch
+SET fake_limit = 99
+IF disk_usage > $fake_limit THEN NOTE "Disk over 99 percent" ELSE NOTE "Disk is fine"

@@ -2,9 +2,7 @@
 monrela/daemon.py
 Persistent background process.
 Listens on Unix socket. Parses instructions. Dispatches to actions.
-Stays alive until killed — no cold start on subsequent palette opens.
-
-Run with:  python3 main.py --daemon
+RUN_SCRIPT is routed through scripting.py engine.
 """
 
 import os
@@ -16,10 +14,11 @@ import logging
 
 from config import (
     SOCKET_PATH, BUFFER_SIZE, ENCODING,
-    DATA_DIR, LOG_FILE,
-    load_aliases,
+    DATA_DIR, LOG_FILE, PID_FILE,
+    load_aliases, write_pid_file,
 )
 from actions import get_action, VERB_LIST
+import scripting
 
 
 # ── Logging ───────────────────────────────────
@@ -42,8 +41,8 @@ log = logging.getLogger("monrela")
 
 def parse_instruction(raw: str) -> tuple:
     """
-    Parse 'VERB arg1 "quoted arg" arg3' into (VERB, [args]).
-    Quoted strings (single or double) become single args.
+    Parse 'VERB arg1 "quoted arg"' into (VERB, [args]).
+    Quoted strings become single args.
     Returns ("", []) for blank input.
     """
     raw = raw.strip()
@@ -85,43 +84,39 @@ def execute(raw: str) -> dict:
     """
     Parse and run one instruction string.
     Always returns {"ok": bool, "message": str, "detail": str}.
+    This function is also passed into scripting.run_script() as the executor
+    so script lines can call back into the same dispatch path.
     """
     verb, args = parse_instruction(raw)
 
     if not verb:
         return _resp(False, "Empty instruction")
 
+    # ── Route RUN_SCRIPT through the scripting engine ──
+    if verb == "RUN_SCRIPT":
+        if not args:
+            return _resp(False, "Usage: RUN_SCRIPT <script name>")
+        return scripting.run_script(args[0], execute)
+
+    # ── All other verbs go through actions registry ──
     action = get_action(verb)
     if action is None:
-        return _resp(False, f"Unknown verb: {verb}", f"Available: {' '.join(VERB_LIST)}")
+        return _resp(
+            False,
+            f"Unknown verb: {verb}",
+            f"Available: {' '.join(VERB_LIST)}"
+        )
 
     aliases = load_aliases()
 
     try:
         result = action.run(args, aliases)
-
-        # RUN_SCRIPT returns instructions embedded in detail for sequential exec
-        if result.ok and result.message == "__SCRIPT__":
-            return _run_script_lines(result.detail.splitlines())
-
         log.info(f"{'OK' if result.ok else 'ERR'}  {raw[:80]}")
         return _resp(result.ok, result.message, result.detail)
 
     except Exception as e:
         log.error(f"Action error '{raw}': {e}")
         return _resp(False, "Internal error", str(e))
-
-
-def _run_script_lines(lines: list) -> dict:
-    """Execute each instruction in a script sequentially."""
-    results = []
-    all_ok  = True
-    for line in lines:
-        r = execute(line)
-        results.append(f"{'✓' if r['ok'] else '✗'}  {line}")
-        if not r["ok"]:
-            all_ok = False
-    return _resp(all_ok, f"Script: {len(lines)} instruction(s) run", "\n".join(results))
 
 
 def _resp(ok: bool, message: str, detail: str = "") -> dict:
@@ -148,6 +143,10 @@ class MonrelaDaemon:
             os.unlink(SOCKET_PATH)
         except OSError:
             pass
+        try:
+            os.unlink(PID_FILE)
+        except OSError:
+            pass
 
     def start(self):
         self._remove_socket()
@@ -162,6 +161,7 @@ class MonrelaDaemon:
             sys.exit(1)
 
         srv.listen(5)
+        write_pid_file()   # write PID so daemon_running() can find us reliably
         log.info(f"Monrela daemon ready — socket: {SOCKET_PATH}")
         log.info(f"Verbs: {', '.join(VERB_LIST)}")
 
@@ -192,7 +192,9 @@ class MonrelaDaemon:
 
             if instruction == "__STOP__":
                 log.info("Stop signal received.")
-                conn.sendall(json.dumps(_resp(True, "Daemon stopped")).encode(ENCODING))
+                conn.sendall(
+                    json.dumps(_resp(True, "Daemon stopped")).encode(ENCODING)
+                )
                 conn.close()
                 self._on_signal(None, None)
                 return
@@ -203,7 +205,9 @@ class MonrelaDaemon:
             conn.sendall(response)
 
         except json.JSONDecodeError:
-            err = json.dumps(_resp(False, "Could not parse instruction")).encode(ENCODING)
+            err = json.dumps(
+                _resp(False, "Could not parse instruction")
+            ).encode(ENCODING)
             try:
                 conn.sendall(err)
             except Exception:

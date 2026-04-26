@@ -1,0 +1,5 @@
+# Test variable SET and substitution
+SET name = Monrela
+SET threshold = 50
+NOTE "Testing $name scripting engine"
+SEARCH google "$name command palette linux"
