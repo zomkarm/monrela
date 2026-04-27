@@ -319,6 +319,16 @@ class MonrelaPalette(QWidget):
         instruction = self._input.text().strip()
         if not instruction:
             return
+
+        # Intercept palette-side commands before sending to daemon
+        verb = instruction.upper().split()[0]
+
+        if verb == "MANAGE_SCRIPTS":
+            self._input.clear()
+            self.hide()
+            QTimer.singleShot(100, self._open_script_manager)
+            return
+
         result = self._send(instruction)
         self._show_result(result)
         self._timer.start(4000 if result.get("ok") else 6000)
@@ -403,3 +413,29 @@ class MonrelaPalette(QWidget):
     def focusOutEvent(self, event):
         QTimer.singleShot(150, lambda: self.hide() if not self.isActiveWindow() else None)
         super().focusOutEvent(event)
+
+    def _open_script_manager(self):
+        """Open script manager directly in palette process — never via daemon."""
+        try:
+            from script_manager import ScriptManagerWindow
+
+            if not hasattr(self, '_script_manager_win'):
+                self._script_manager_win = None
+
+            if self._script_manager_win is None or not self._script_manager_win.isVisible():
+                self._script_manager_win = ScriptManagerWindow()
+                # Clean up reference when closed
+                self._script_manager_win.finished_signal.connect(
+                    lambda: setattr(self, '_script_manager_win', None)
+                )
+                # Also emit palette closed so main.py can check if it should quit
+                self._script_manager_win.finished_signal.connect(
+                    self.closed.emit
+                )
+
+            self._script_manager_win.show()
+            self._script_manager_win.raise_()
+            self._script_manager_win.activateWindow()
+
+        except Exception as e:
+            print(f"Could not open script manager: {e}")

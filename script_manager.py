@@ -108,6 +108,9 @@ QSplitter::handle { background-color: #252d3d; width: 1px; }
 
 class ScriptManagerWindow(QWidget):
 
+    from PyQt6.QtCore import pyqtSignal
+    finished_signal = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._current_file = None   # path of script being edited
@@ -343,3 +346,8 @@ class ScriptManagerWindow(QWidget):
         self._current_file = None
         self._delete_btn.setEnabled(False)
         self._list.clearSelection()
+
+    def closeEvent(self, event):
+        """Emit finished_signal when window is closed so main.py can quit cleanly."""
+        self.finished_signal.emit()
+        super().closeEvent(event)

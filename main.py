@@ -157,16 +157,30 @@ def _open_palette():
     win = MonrelaPalette()
     win.show_palette()
 
-    # Exit Qt loop cleanly when palette closes
-    def on_close():
-        # Remove palette lock file on exit
+    def try_quit():
+        """
+        Quit the Qt app only when both the palette AND
+        any open script manager window are fully closed.
+        """
+        # Check if script manager is open on the palette instance
+        mgr = getattr(win, '_script_manager_win', None)
+        if mgr is not None and mgr.isVisible():
+            # Script manager still open — don't quit yet
+            # Connect to its close so we retry when it closes
+            try:
+                mgr.finished_signal.connect(try_quit)
+            except Exception:
+                pass
+            return
+
+        # All windows closed — clean up and quit
         try:
             os.unlink(lock_file)
         except OSError:
             pass
         app.quit()
 
-    win.closed.connect(on_close)
+    win.closed.connect(try_quit)
 
     ret = app.exec()
 
